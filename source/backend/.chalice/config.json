@@ -1,0 +1,21 @@
+{
+  "version": "2.0",
+  "app_name": "liveness-backend",
+  "lambda_functions": {
+    "api_handler": {
+      "lambda_timeout": 120,
+      "lambda_memory_size": 512
+    }
+  },
+  "stages": {
+    "dev": {
+      "api_gateway_stage": "dev",
+      "environment_variables": {
+        "REGION_NAME": "us-east-1",
+        "THREAD_POOL_SIZE": "10",
+        "LOG_LEVEL": "DEBUG",
+        "CLIENT_CHALLENGE_SELECTION": "True"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+.spinner-frame {
+  position: relative;
+  padding-top: 1rem;
+  width: 170px;
+  margin: 2rem auto 0 auto;
+}
+.eyes-face {
+  position: absolute;
+  width: 67px;
+  top: 98px;
+  left: 49px;
+  animation: 0.4s ease-in-out infinite alternate movingEyes;
+}
+@keyframes movingEyes {
+  from {
+    left: 49px;
+  }
+  to {
+    left: 51px;
+  }
+}

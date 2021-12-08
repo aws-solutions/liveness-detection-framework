@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Liveness Detection Framework - web application static files
+Resources:
+  StaticWebsiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LoggingBucket
+        LogFilePrefix: "s3-static-website-bucket/"
+  LoggingBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      AccessControl: LogDeliveryWrite
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 Bucket access logging not needed here.
+  LoggingBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LoggingBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Deny
+            Principal: "*"
+            Action: "*"
+            Resource:
+              - !Sub "arn:aws:s3:::${LoggingBucket}/*"
+              - !Sub "arn:aws:s3:::${LoggingBucket}"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "S3 CloudFront OAI"
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: the-s3-bucket
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        Logging:
+          Bucket: !Sub "${LoggingBucket}.s3.amazonaws.com"
+          Prefix: "cloudfront-distribution/"
+        Origins:
+          - DomainName: !Sub "${StaticWebsiteBucket}.s3.${AWS::Region}.amazonaws.com"
+            Id: the-s3-bucket
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W70
+            reason: Minimum protocol version not supported with distribution that uses the CloudFront domain name.
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StaticWebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            Resource: !Sub "arn:aws:s3:::${StaticWebsiteBucket}/*"
+          - Effect: Deny
+            Action: "*"
+            Principal: "*"
+            Resource:
+              - !Sub "arn:aws:s3:::${StaticWebsiteBucket}/*"
+              - !Sub "arn:aws:s3:::${StaticWebsiteBucket}"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+Outputs:
+  StaticWebsiteBucket:
+    Value: !Ref StaticWebsiteBucket
+  WebsiteURL:
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}/"

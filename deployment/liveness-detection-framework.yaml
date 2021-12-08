@@ -1,0 +1,83 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: (%%SOLUTION_ID%%) - Liveness Detection Framework %%VERSION%% - Main template
+
+Parameters:
+  AdminEmail:
+    Type: String
+    Description: The email of the system administrator
+    AllowedPattern: '[^\s@]+@[^\s@]+\.[^\s@]+'
+    ConstraintDescription: Must be a valid email address
+  AdminName:
+    Type: String
+    MinLength: 1
+    MaxLength: 2048
+    Description: The name of the system administrator
+
+Mappings:
+  MetricsMap:
+    Send-Data:
+      SendAnonymousData: True # change to 'False' if needed
+  SourceCode:
+    General:
+      S3Bucket: "%%BUCKET_NAME%%"
+      KeyPrefix: "%%SOLUTION_NAME%%/%%VERSION%%"
+  AWSSDK:
+    UserAgent:
+      Extra: "AWSSOLUTION/%%SOLUTION_ID%%/%%VERSION%%"
+
+Resources:
+  CognitoStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${S3Bucket}/${S3Key}
+        - S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"]%%SUFFIX_REF%%]]
+          S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "cognito.template"]]
+      Parameters:
+        AdminEmail: !Ref AdminEmail
+        AdminName: !Ref AdminName
+  BackendStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: CognitoStack
+    Properties:
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${S3Bucket}/${S3Key}
+        - S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"]%%SUFFIX_REF%%]]
+          S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "backend.template"]]
+      Parameters:
+        SendAnonymousData: !FindInMap ["MetricsMap", "Send-Data", "SendAnonymousData"]
+        SolutionIdentifier: !FindInMap ["AWSSDK", "UserAgent", "Extra"]
+        LambdaCodeUriBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"]%%SUFFIX_REGION%%]]
+        LambdaCodeUriKey: !Join [ "/", [ !FindInMap [ "SourceCode", "General", "KeyPrefix" ],  "deployment.zip" ] ]
+        CognitoUserPoolArn: !GetAtt CognitoStack.Outputs.CognitoUserPoolArn
+  ClientStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DependsOn: BackendStack
+    Properties:
+      TemplateURL: !Sub
+        - https://s3.amazonaws.com/${S3Bucket}/${S3Key}
+        - S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"]%%SUFFIX_REF%%]]
+          S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "client.template"]]
+      Parameters:
+        EndpointURL: !GetAtt BackendStack.Outputs.EndpointURL
+        BuildBucket: !FindInMap ["SourceCode", "General", "S3Bucket"]
+        BuildKey: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "%%CLIENT_BUILD_KEY%%"]]
+        UserPoolId: !GetAtt CognitoStack.Outputs.UserPoolId
+        UserPoolWebClientId: !GetAtt CognitoStack.Outputs.UserPoolWebClientId
+
+Outputs:
+  Url:
+    Value: !GetAtt ClientStack.Outputs.WebsiteURL

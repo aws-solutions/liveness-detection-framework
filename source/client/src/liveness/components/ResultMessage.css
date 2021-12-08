@@ -1,0 +1,17 @@
+.result-frame {
+  position: relative;
+  padding-top: 1rem;
+  width: 170px;
+  margin: 2rem auto 0 auto;
+}
+.result-animation {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+.result-face {
+  width: 150px;
+  border: 1px solid white;
+  border-radius: 1rem;
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 24px 48px -10px;
+}

@@ -1,0 +1,45 @@
+/*
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#video-camera {
+  width: 100%;
+  max-width: 640px;
+  position: absolute;
+}
+
+#text-info {
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  background: rgba(24, 12, 12, 0.51);
+  color: white;
+}
+
+.rotate {
+  transform: translate(-50%) rotateY(180deg);
+}
+
+.videoContainer {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.take-button {
+  position: absolute;
+}
+.hidden {
+  display: none;
+}
+.p-relative {
+  position: relative;
+}
+.check-canvas {
+  background-color: #f2f3f3;
+  padding: 1rem;
+  border-radius: 1rem;
+}

@@ -1,0 +1,256 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Liveness Detection Framework %%VERSION%% - Client template
+
+Parameters:
+  BuildBucket:
+    Type: String
+  BuildKey:
+    Type: String
+  EndpointURL:
+    Type: String
+  UserPoolId:
+    Type: String
+  UserPoolWebClientId:
+    Type: String
+Resources:
+  StaticWebsiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LoggingConfiguration:
+        DestinationBucketName: !Ref LoggingBucket
+        LogFilePrefix: "s3-static-website-bucket/"
+  LoggingBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      AccessControl: LogDeliveryWrite
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: S3 Bucket access logging not needed here.
+          - id: W51
+            reason: Bucket policy not needed here.
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "S3 CloudFront OAI"
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: false
+          TargetOriginId: the-s3-bucket
+          ViewerProtocolPolicy: redirect-to-https
+        DefaultRootObject: index.html
+        Enabled: true
+        Logging:
+          Bucket: !Sub "${LoggingBucket}.s3.amazonaws.com"
+          Prefix: "cloudfront-distribution/"
+        Origins:
+          - DomainName: !Sub "${StaticWebsiteBucket}.s3.${AWS::Region}.amazonaws.com"
+            Id: the-s3-bucket
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W70
+            reason: Minimum protocol version not supported with distribution that uses the CloudFront domain name.
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StaticWebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            Resource: !Sub "arn:aws:s3:::${StaticWebsiteBucket}/*"
+          - Effect: Deny
+            Action: "*"
+            Principal: "*"
+            Resource:
+              - !Sub "arn:aws:s3:::${StaticWebsiteBucket}/*"
+              - !Sub "arn:aws:s3:::${StaticWebsiteBucket}"
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+  WebsiteCustomResource:
+    Type: Custom::WebsiteCustomResource
+    Properties:
+      ServiceToken: !GetAtt WebsiteCustomResourceFunction.Arn
+      InputBucket: !Ref BuildBucket
+      InputKey: !Ref BuildKey
+      OutputBucket: !Ref StaticWebsiteBucket
+      EndpointURL: !Ref EndpointURL
+      UserPoolId: !Ref UserPoolId
+      UserPoolWebClientId: !Ref UserPoolWebClientId
+      AwsRegion: !Ref AWS::Region
+  WebsiteCustomResourceFunction:
+     Type: AWS::Lambda::Function
+     Properties:
+       Handler: index.handler
+       Role: !GetAtt WebsiteCustomResourceFunctionRole.Arn
+       Timeout: 300
+       Runtime: python3.6
+       Code:
+         ZipFile: |
+          import zipfile
+          from pathlib import Path
+          import boto3
+          import cfnresponse
+
+          MIME_BY_EXTENSION = {
+              'ico': 'image/x-icon',
+              'html': 'text/html',
+              'json': 'application/json',
+              'txt': 'text/plain',
+              'css': 'text/css',
+              'js': 'application/javascript',
+              'svg': 'image/svg+xml',
+              'png': 'image/png'
+          }
+
+          def copy_files(input_bucket, input_key, output_bucket, replacements):
+              s3_client = boto3.client('s3')
+              filename = input_key.split('/')[-1]
+              download_path = f'/tmp/{filename}'
+              print('Downloading client static files')
+              s3_client.download_file(input_bucket, input_key, download_path)
+              zip_content_path = '/tmp/zip-content/'
+              with zipfile.ZipFile(download_path, 'r') as zip_ref:
+                  zip_ref.extractall(zip_content_path)
+              for local_path in Path(zip_content_path).glob('**/*.*'):
+                  for replacement in replacements:
+                      try:
+                          local_path.write_text(local_path.read_text().replace(replacement[0], replacement[1]))
+                      except UnicodeDecodeError:
+                          pass
+                  local_path_str = str(local_path)
+                  key = local_path_str.replace(zip_content_path, '')
+                  extension = local_path_str.split('.')[-1]
+                  extra_args = {'ContentType': MIME_BY_EXTENSION[extension]} if extension in MIME_BY_EXTENSION else {}
+                  print(f'Copying {local_path_str} to s3://{output_bucket}/{key} ExtraArgs={extra_args}')
+                  s3_client.upload_file(local_path_str, output_bucket, key, ExtraArgs=extra_args)
+
+          def handler(event, context):
+              request_type = event['RequestType']
+              request_properties = event['ResourceProperties']
+              input_bucket = request_properties['InputBucket']
+              input_key = request_properties['InputKey']
+              output_bucket = request_properties['OutputBucket']
+              response_data = {}
+              try:
+                  if request_type == 'Create':
+                      replacements = [
+                          ('%%ENDPOINT_URL%%', request_properties['EndpointURL']),
+                          ('%%USER_POOL_ID%%', request_properties['UserPoolId']),
+                          ('%%USER_POOL_WEB_CLIENT_ID%%', request_properties['UserPoolWebClientId']),
+                          ('%%AWS_REGION%%', request_properties['AwsRegion'])
+                      ]
+                      copy_files(input_bucket, input_key, output_bucket, replacements)
+                  elif request_type == 'Update':
+                      pass
+                  elif request_type == 'Delete':
+                      s3_resource = boto3.resource('s3')
+                      s3_resource.Bucket(output_bucket).objects.all().delete()
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+              except Exception as e:
+                  response_data['Data'] = str(e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
+     Metadata:
+       cfn_nag:
+         rules_to_suppress:
+           - id: W89
+             reason: "This function does not need to access any resource provisioned within a VPC."
+           - id: W92
+             reason: "This function does not need performance optimization, so the default limit suffice."
+  WebsiteCustomResourceFunctionRole:
+     Type: AWS::IAM::Role
+     Properties:
+       AssumeRolePolicyDocument:
+         Statement:
+         - Action:
+           - sts:AssumeRole
+           Effect: Allow
+           Principal:
+             Service:
+             - lambda.amazonaws.com
+         Version: '2012-10-17'
+       Path: '/'
+       Policies:
+       - PolicyDocument:
+           Statement:
+           - Action:
+             - logs:CreateLogGroup
+             - logs:CreateLogStream
+             - logs:PutLogEvents
+             Effect: Allow
+             Resource: arn:aws:logs:*:*:*
+           Version: '2012-10-17'
+         PolicyName: !Sub ${AWS::StackName}-${AWS::Region}-WebsiteCustomResource-CW
+       - PolicyDocument:
+           Statement:
+           - Action:
+             - s3:GetObject
+             - s3:ListBucket
+             - s3:GetBucketLocation
+             - s3:GetObjectVersion
+             - s3:GetLifecycleConfiguration
+             Effect: Allow
+             Resource:
+             - !Sub arn:aws:s3:::${BuildBucket}/*
+             - !Sub arn:aws:s3:::${BuildBucket}
+           Version: '2012-10-17'
+         PolicyName: !Sub ${AWS::StackName}-${AWS::Region}-WebsiteCustomResource-S3Read
+       - PolicyDocument:
+           Statement:
+           - Action:
+             - s3:GetObject
+             - s3:ListBucket
+             - s3:GetBucketLocation
+             - s3:GetObjectVersion
+             - s3:PutObject
+             - s3:PutObjectAcl
+             - s3:GetLifecycleConfiguration
+             - s3:PutLifecycleConfiguration
+             - s3:DeleteObject
+             Effect: Allow
+             Resource:
+             - !Sub arn:aws:s3:::${StaticWebsiteBucket}/*
+             - !Sub arn:aws:s3:::${StaticWebsiteBucket}
+           Version: '2012-10-17'
+         PolicyName: !Sub ${AWS::StackName}-${AWS::Region}-WebsiteCustomResource-S3Crud
+Outputs:
+  WebsiteURL:
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}/"

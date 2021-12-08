@@ -1,0 +1,47 @@
+/*
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+.LivenessDetection {
+  text-align: center;
+}
+
+.LivenessDetection-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .LivenessDetection-logo {
+    animation: LivenessDetection-logo-spin infinite 20s linear;
+  }
+}
+
+.LivenessDetection-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.LivenessDetection-link {
+  color: #61dafb;
+}
+
+.gray-darker {
+  color: #545b64;
+}
+
+@keyframes LivenessDetection-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

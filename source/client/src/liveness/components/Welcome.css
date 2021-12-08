@@ -1,0 +1,41 @@
+.header {
+  background: url("./assets/wave.svg") no-repeat top center;
+  background-size: auto;
+}
+
+.title-background {
+  font-weight: 800;
+  text-align: left;
+  margin-bottom: 2rem;
+  padding-top: 6rem;
+}
+.title-background span {
+  font-weight: 400;
+}
+
+.challenge-options {
+  border: 1px solid #d5dbdb;
+  border-radius: 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.challenge-options:hover {
+  /* background-color: #f2f3f3; */
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+}
+.small {
+  color: #545b64;
+}
+.challenge-image {
+  width: 80px;
+}
+.challenge-options .option-content {
+  text-align: left;
+}
+.challenge-options input {
+  margin: 0.25rem 0.5rem 0 0;
+}
+.challenge-options label {
+  font-weight: 800;
+  margin-bottom: 0;
+}

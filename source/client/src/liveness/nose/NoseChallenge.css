@@ -1,0 +1,42 @@
+/*
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#cameraVideo {
+  width: 100%;
+  max-width: 640px;
+}
+
+#cameraVideo,
+#overlayCanvas {
+  position: absolute;
+}
+
+.rotate {
+  transform: translate(-50%) rotateY(180deg);
+}
+
+.videoContainer {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.helpContainer {
+  height: 100px;
+  width: 100%;
+}
+
+.messageContainer {
+  height: 8em;
+  max-width: 70%;
+  text-align: left;
+}
+
+.message {
+  height: 4em;
+  margin-top: 2em;
+}

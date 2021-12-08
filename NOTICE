@@ -1,1 +1,42 @@
+Liveness Detection Framework
+
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Licensed under the Apache License Version 2.0 (the "License"). You may not use this file except
+in compliance with the License. A copy of the License is located at http://www.apache.org/licenses/
+or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+**********************
+THIRD PARTY COMPONENTS
+**********************
+This software includes third party software subject to the following copyrights:
+
+AWS SDK under the Apache License Version 2.0
+@types/jest under MIT license
+@types/node under MIT license
+@types/react under MIT license
+@types/react-dom under MIT license
+@typescript-eslint/eslint-plugin under MIT license
+@typescript-eslint/parser under BSD-2-Clause license
+aws-amplify under Apache-2.0 license
+bootstrap under MIT license
+eslint under MIT license
+eslint-config-prettier under MIT license
+eslint-plugin-prettier under MIT license
+eslint-plugin-react under MIT license
+face-api.js under MIT license
+prettier under MIT license
+react under MIT license
+react-dom under MIT license
+react-lottie under MIT license
+react-scripts under MIT license
+sass under MIT license
+typescript under Apache-2.0 license
+web-vitals under Apache-2.0 license
+PyJWT under MIT License
+aws-lambda-powertools under MIT License
+boto3 under Apache Software License
+botocore under Apache Software License
+chalice under Apache Software License
+numpy under BSD License

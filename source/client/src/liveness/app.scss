@@ -1,0 +1,48 @@
+$gray-100: #f2f3f3;
+$gray-300: #d5dbdb;
+$gray-500: #aab7b8;
+$gray-700: #545b64;
+$gray-900: #16191f;
+$black: #000;
+
+$red: #dc2a2a !default;
+$yellow: #8d6708 !default;
+$green: #1d5240 !default;
+
+$primary: #16191f;
+$secondary: #ededed;
+$success: $green;
+$info: $gray-500;
+$warning: $yellow;
+$danger: $red;
+$light: $gray-100;
+$dark: $gray-700;
+
+$enable-shadows: false;
+
+$box-shadow-sm: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+$box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+$box-shadow-lg: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+
+$body-color: $gray-900;
+
+@import url("https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&display=swap");
+$font-family-sans-serif: "Fira Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+  "Noto Sans", "Liberation Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+  "Noto Color Emoji";
+
+$border-radius: 0.8rem;
+$border-radius-lg: 0.8rem;
+$border-radius-sm: 0.8rem;
+
+$input-btn-padding-y: 0.5rem;
+$input-btn-padding-x: 1rem;
+
+$container-max-widths: (
+  sm: 540px,
+  md: 720px,
+  lg: 720px,
+  xl: 720px
+);
+
+@import "node_modules/bootstrap/scss/bootstrap";

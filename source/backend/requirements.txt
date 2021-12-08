@@ -1,0 +1,6 @@
+boto3==1.20.11
+botocore==1.23.11
+chalice==1.26.2
+numpy==1.21.4
+aws-lambda-powertools==1.22.0
+PyJWT==2.3.0

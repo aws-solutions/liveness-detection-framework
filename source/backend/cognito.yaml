@@ -1,0 +1,75 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: Liveness Detection Framework - user authentication
+
+Parameters:
+  AdminEmail:
+    Type: String
+    Description: The email of the system administrator
+    AllowedPattern: '[^\s@]+@[^\s@]+\.[^\s@]+'
+    ConstraintDescription: Must be a valid email address
+  AdminName:
+    Type: String
+    MinLength: 1
+    MaxLength: 2048
+    Description: The name of the system administrator
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      UserPoolName: LivenessUserPool
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 6
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+      - USER_PASSWORD_AUTH
+      ReadAttributes:
+      - name
+      - email
+      - email_verified
+  AdminlUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      UserPoolId: !Ref UserPool
+      DesiredDeliveryMediums:
+      - EMAIL
+      Username: admin
+      UserAttributes:
+      - Name: name
+        Value: !Ref AdminName
+      - Name: email
+        Value: !Ref AdminEmail
+      - Name: email_verified
+        Value: True
+
+Outputs:
+  CognitoUserPoolArn:
+    Value: !GetAtt UserPool.Arn
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolWebClientId:
+    Value: !Ref UserPoolClient
