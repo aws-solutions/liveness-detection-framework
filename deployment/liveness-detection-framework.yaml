@@ -73,7 +73,7 @@ Resources:
           S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "client.template"]]
       Parameters:
         EndpointURL: !GetAtt BackendStack.Outputs.EndpointURL
-        BuildBucket: !FindInMap ["SourceCode", "General", "S3Bucket"]
+        BuildBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"]%%SUFFIX_REGION%%]]
         BuildKey: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],  "%%CLIENT_BUILD_KEY%%"]]
         UserPoolId: !GetAtt CognitoStack.Outputs.UserPoolId
         UserPoolWebClientId: !GetAtt CognitoStack.Outputs.UserPoolWebClientId
