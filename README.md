@@ -1,3 +1,6 @@
+***Deprecation Notice*** - This AWS Solution has been archived and is no longer maintained by AWS. To discover other solutions, please visit the [AWS Solutions Library](https://aws.amazon.com/solutions).
+
+
 # Liveness Detection Framework
 
 The Liveness Detection Framework solution helps you implement liveness detection mechanisms into your applications by
