@@ -74,7 +74,7 @@ cp sam.yaml $template_dist_dir/backend.template
 # Step 3/5: Build client (React)
 ######################################################
 cd $source_dir/client || exit
-npm ci
+npm install --legacy-peer-deps
 # Download ML models
 curl -o public/weights/tiny_face_detector_model-shard1.shard -kL https://github.com/justadudewhohacks/face-api.js/blob/a86f011d72124e5fb93e59d5c4ab98f699dd5c9c/weights/tiny_face_detector_model-shard1?raw=true
 echo 'f3020debaf078347b5caaff4bf6dce2f379d20bc *public/weights/tiny_face_detector_model-shard1.shard' | shasum -c
